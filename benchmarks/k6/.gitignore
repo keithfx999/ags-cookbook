@@ -1,0 +1,32 @@
+# k6 输出文件
+summary.json
+*.log
+
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 编辑器和 IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 测试结果
+results/
+reports/
+*.html
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+

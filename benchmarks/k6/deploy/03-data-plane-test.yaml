@@ -1,0 +1,96 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: sandbox-data-plane-test
+  namespace: default
+  labels:
+    test-type: data-plane
+    app: sandbox-stress-test
+spec:
+  parallelism: 100
+  script:
+    configMap:
+     name: sandbox-stress-test-data-plane-script
+     file: test.js
+  arguments: "-v -o xk6-influxdb=http://influxdb2.default.svc.cluster.local:80"
+  starter:
+    image: ghcr.io/grafana/k6-operator:latest-starter
+    # Alternative image(when ghcr.io is not accessible):
+    # image: ccr.ccs.tencentyun.com/nackzhang/k6-operator:latest-starter
+    affinity: {}
+    tolerations: []
+  runner:
+    image: ghcr.io/grafana/xk6:latest
+    # Alternative image(when ghcr.io is not accessible):
+    # image: ccr.ccs.tencentyun.com/nackzhang/xk6:latest
+    env:
+      - name: TENCENTCLOUD_SECRET_ID
+        valueFrom:
+          secretKeyRef:
+            name: tencent-cloud-credentials
+            key: TENCENTCLOUD_SECRET_ID
+      - name: TENCENTCLOUD_SECRET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: tencent-cloud-credentials
+            key: TENCENTCLOUD_SECRET_KEY
+      # Data plane stress test configuration
+      - name: MAX_VUS
+        value: "10000"
+      - name: VUS_INCREASE_PER_SECOND
+        value: "400"
+      - name: CODE_EXECUTION_DURATION
+        value: "35"
+      - name: STEADY_DURATION
+        value: "5m"
+      - name: RAMP_DOWN_DURATION
+        value: "30s"
+      - name: API_REGION
+        value: "ap-beijing"
+      # K6 configuration
+      - name: K6_LOG_LEVEL
+        valueFrom:
+          configMapKeyRef:
+            name: k6-config
+            key: K6_LOG_LEVEL
+      - name: K6_SUMMARY_TREND_STATS
+        valueFrom:
+          configMapKeyRef:
+            name: k6-config
+            key: K6_SUMMARY_TREND_STATS
+      # InfluxDB configuration
+      - name: K6_INFLUXDB_ADDR
+        valueFrom:
+          secretKeyRef:
+            name: influxdb-credentials
+            key: INFLUXDB_URL
+      - name: K6_INFLUXDB_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: influxdb-credentials
+            key: INFLUXDB_TOKEN
+      - name: K6_INFLUXDB_ORGANIZATION
+        valueFrom:
+          secretKeyRef:
+            name: influxdb-credentials
+            key: INFLUXDB_ORG
+      - name: K6_INFLUXDB_BUCKET
+        valueFrom:
+          secretKeyRef:
+            name: influxdb-credentials
+            key: INFLUXDB_BUCKET
+      - name: K6_INFLUXDB_PUSH_INTERVAL
+        value: "5s"
+      - name: K6_INFLUXDB_INSECURE
+        value: "false"
+    affinity: {}
+    tolerations: []
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "1000m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
+
+
