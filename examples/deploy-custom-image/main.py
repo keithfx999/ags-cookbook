@@ -86,6 +86,11 @@ def build_and_push(cfg: dict[str, str], engine: str) -> tuple[str, dict]:
     target = cfg["TENCENTCLOUD_REGISTRY"].rstrip("/")
     image_latest = f"{target}:latest"
 
+    run([engine, "pull", "--platform", "linux/amd64", source_image])
+
+    print(f"\n  Inspecting source image: {source_image}")
+    image_info = inspect_source_image(engine, source_image)
+
     run([
         engine, "build",
         "--platform", "linux/amd64",
@@ -93,9 +98,6 @@ def build_and_push(cfg: dict[str, str], engine: str) -> tuple[str, dict]:
         "-t", image_latest,
         str(SCRIPT_DIR),
     ])
-
-    print(f"\n  Inspecting source image: {source_image}")
-    image_info = inspect_source_image(engine, source_image)
 
     result = subprocess.run(
         [engine, "inspect", "--format={{.Id}}", image_latest],
