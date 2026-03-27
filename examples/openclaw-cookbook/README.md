@@ -229,14 +229,13 @@ make push
 
 ### 配置本地代理
 
-进入 `localproxy` 目录：
+复制环境变量模板：
 
 ```bash
-cd localproxy
-cp .env.example .env
+cp localproxy/.env.example localproxy/.env
 ```
 
-编辑 `.env`，填入以下环境变量：
+编辑 `localproxy/.env`，填入以下环境变量：
 
 ```bash
 # 腾讯云 API 凭据（必须）
@@ -254,8 +253,9 @@ MOUNT_NAME=cos                           # 指定挂载项名称，用于传递 
 安装依赖并启动：
 
 ```bash
-pnpm install
-pnpm start
+# 在 openclaw-cookbook 根目录下执行
+make setup   # 安装 localproxy 依赖
+make run     # 启动 localproxy 管理服务
 ```
 
 ### 使用流程
