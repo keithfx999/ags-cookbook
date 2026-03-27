@@ -46,6 +46,8 @@ enhanced_demo_output/
 *.jpeg
 *.csv
 *.json
+!package.json
+!pnpm-lock.yaml
 quick_test.png
 examples/mobile-use/apk/
 examples/mobile-use/output/

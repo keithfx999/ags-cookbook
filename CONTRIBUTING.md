@@ -65,6 +65,7 @@ Each example should aim to provide:
 - isolated dependency management
   - Python: prefer `pyproject.toml` + `uv.lock`
   - Go: `go.mod` / `go.sum`
+  - Node.js / TypeScript: `package.json` + `pnpm-lock.yaml`
 
 ### README expectations
 
@@ -89,6 +90,13 @@ Each example README should include:
 
 - Read credentials from `TENCENTCLOUD_*` only
 - Keep startup / cleanup behavior explicit
+
+## Node.js / TypeScript examples
+
+- Use `pnpm` as the package manager; commit `pnpm-lock.yaml`
+- Use `tsx` to run TypeScript directly — no build step required
+- Read credentials from environment variables (`TENCENTCLOUD_*`); use `dotenv` to load `.env`
+- Provide `.env.example` with placeholder values only — never commit real secrets
 
 ## Commit messages
 
