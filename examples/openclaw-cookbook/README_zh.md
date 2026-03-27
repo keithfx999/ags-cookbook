@@ -341,7 +341,7 @@ cat /tmp/envd.log
 
 **原因**：COS 挂载的目录为空，`openclaw.json` 未上传。
 
-**解决**：在 COS 桶的 `openclaw-config/` 目录下上传 `openclaw.json`。
+**解决**：将 `openclaw.json` 上传到正确的 COS 路径，例如 `cos://your-bucket/openclaw-user1/.openclaw/openclaw.json`（参见[准备 openclaw.json](#准备-openclawjson)）。
 
 ### Q3：favicon 404
 

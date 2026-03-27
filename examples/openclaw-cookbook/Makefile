@@ -1,6 +1,7 @@
 APP_NAME ?= sandbox-openclaw
 VERSION ?= latest
-DOCKER_REGISTRY ?= ccr.ccs.tencentyun.com/ags-test-image
+# TODO: change to your own registry namespace
+DOCKER_REGISTRY ?= ccr.ccs.tencentyun.com/YOUR_NAMESPACE
 IMAGE_LATEST = $(DOCKER_REGISTRY)/$(APP_NAME):$(VERSION)
 
 CONTAINER_ENGINE ?= podman

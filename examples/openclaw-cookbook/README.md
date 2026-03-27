@@ -341,7 +341,7 @@ cat /tmp/envd.log
 
 **Cause**: The COS-mounted directory is empty; `openclaw.json` was not uploaded.
 
-**Solution**: Upload `openclaw.json` to the `openclaw-config/` directory in the COS bucket.
+**Solution**: Upload `openclaw.json` to the correct COS path, e.g. `cos://your-bucket/openclaw-user1/.openclaw/openclaw.json` (see [Prepare openclaw.json](#prepare-openclawjson)).
 
 ### Q3: favicon 404
 
