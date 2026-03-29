@@ -139,10 +139,13 @@ paused ──resume──▶ resuming ──▶ running
 
 ```
 localproxy/
-├── server.ts        # All logic: Express server, state machine, SSE, embedded UI
-├── package.json
 ├── .env.example     # Environment variable template
-└── .env             # Local config (not committed)
+├── .gitignore
+├── README.md        # This file (English)
+├── README_zh.md     # Chinese version
+├── package.json
+├── pnpm-lock.yaml
+└── server.ts        # All logic: Express server, state machine, SSE, embedded UI
 ```
 
 ---

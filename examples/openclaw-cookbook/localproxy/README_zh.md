@@ -139,10 +139,13 @@ paused ──resume──▶ resuming ──▶ running
 
 ```
 localproxy/
-├── server.ts        # 全部逻辑：Express 服务、状态机、SSE、内嵌 UI
-├── package.json
 ├── .env.example     # 环境变量模板
-└── .env             # 本地配置（不提交）
+├── .gitignore
+├── README.md        # 英文文档
+├── README_zh.md     # 中文文档（本文件）
+├── package.json
+├── pnpm-lock.yaml
+└── server.ts        # 全部逻辑：Express 服务、状态机、SSE、内嵌 UI
 ```
 
 ---

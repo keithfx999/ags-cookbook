@@ -160,15 +160,21 @@ cos://your-bucket/openclaw-user1/.openclaw/openclaw.json
 
 ```
 openclaw-cookbook/
+├── .env.example        # 环境变量模板（make setup 时自动复制到 localproxy/.env）
+├── .gitignore
 ├── Dockerfile          # FROM 官方镜像，COPY --from AGS envd 镜像
 ├── Makefile
-├── .gitignore
+├── README.md           # 英文文档
+├── README_zh.md        # 中文文档（本文件）
 ├── openclaw.json       # 上传到 COS 的配置文件模板
 └── localproxy/         # 本地管理工具（创建/连接/停止沙箱 + 反向代理）
-    ├── server.ts       # 主服务：Express + 状态机 + SSE + 内嵌 Web UI
-    ├── package.json
     ├── .env.example    # 环境变量模板
-    └── .env            # 本地配置（不提交 Git）
+    ├── .gitignore
+    ├── README.md       # LocalProxy 文档（英文）
+    ├── README_zh.md    # LocalProxy 文档（中文）
+    ├── package.json
+    ├── pnpm-lock.yaml
+    └── server.ts       # 主服务：Express + 状态机 + SSE + 内嵌 Web UI
 ```
 
 ### 构建与推送

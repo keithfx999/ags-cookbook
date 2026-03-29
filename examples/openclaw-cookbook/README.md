@@ -160,15 +160,21 @@ cos://your-bucket/openclaw-user1/.openclaw/openclaw.json
 
 ```
 openclaw-cookbook/
+├── .env.example        # Environment variable template (copied to localproxy/.env on make setup)
+├── .gitignore
 ├── Dockerfile          # FROM official image, COPY --from AGS envd image
 ├── Makefile
-├── .gitignore
+├── README.md           # This file (English)
+├── README_zh.md        # Chinese version
 ├── openclaw.json       # Config file template to upload to COS
 └── localproxy/         # Local management tool (create/connect/stop sandbox + reverse proxy)
-    ├── server.ts       # Main service: Express + state machine + SSE + embedded Web UI
-    ├── package.json
     ├── .env.example    # Environment variable template
-    └── .env            # Local config (not committed to Git)
+    ├── .gitignore
+    ├── README.md       # LocalProxy documentation (English)
+    ├── README_zh.md    # LocalProxy documentation (Chinese)
+    ├── package.json
+    ├── pnpm-lock.yaml
+    └── server.ts       # Main service: Express + state machine + SSE + embedded Web UI
 ```
 
 ### Build and Push
