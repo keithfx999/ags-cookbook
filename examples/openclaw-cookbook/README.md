@@ -133,21 +133,24 @@ cos://your-bucket/openclaw-user1/.openclaw/openclaw.json
     },
     "auth": {
       "mode": "token",
-      "token": "openclaw-sandbox-token"
+      "token": "REPLACE_WITH_YOUR_SECURE_TOKEN"
     },
     "bind": "lan"
   }
 }
 ```
 
+> ⚠️ **Security Warning**: You **must** replace `REPLACE_WITH_YOUR_SECURE_TOKEN` with a strong, unique token before deploying. The `dangerously*` options disable security checks required for AGS proxy access — do **not** use these settings on publicly exposed instances without the AGS auth gateway in front.
+
 ### Key Configuration Items
 
 | Config Path | Value | Description |
 |-------------|-------|-------------|
 | `gateway.bind` | `"lan"` | **Required**. Makes OpenClaw listen on `0.0.0.0` instead of loopback, so it's accessible from outside the container |
-| `gateway.auth.token` | `"openclaw-sandbox-token"` | OpenClaw's own Bearer Token |
-| `gateway.controlUi.dangerouslyDisableDeviceAuth` | `true` | **Required**. Disables device pairing check |
-| `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback` | `true` | **Required**. Adapts to AGS domain access |
+| `gateway.auth.token` | `"REPLACE_WITH_YOUR_SECURE_TOKEN"` | **Must replace**. OpenClaw's own Bearer Token — use a strong, unique value |
+| `gateway.controlUi.dangerouslyDisableDeviceAuth` | `true` | **Required for AGS**. Disables device pairing check (AGS proxy cannot complete device pairing) |
+| `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback` | `true` | **Required for AGS**. Adapts to AGS domain-based access where Host header differs from origin |
+| `gateway.controlUi.allowedOrigins` | `["*"]` | Allows cross-origin access from any domain — acceptable behind AGS auth gateway |
 
 ---
 
@@ -266,7 +269,7 @@ make run     # Start localproxy management service
 3. Wait for state transitions: `Idle → Starting → Connecting → Running`
 4. Once Running, click **Open Dashboard** to access OpenClaw Dashboard (at `http://localhost:3001/sandbox/__openclaw__`)
 
-> ⚠️ On first visit to the Dashboard, you'll need to enter the OpenClaw Token. The default is `openclaw-sandbox-token` (as configured in `openclaw.json`).
+> ⚠️ On first visit to the Dashboard, you'll need to enter the OpenClaw Token — use the value you set for `gateway.auth.token` in `openclaw.json`.
 
 ---
 

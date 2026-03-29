@@ -19,7 +19,7 @@
     },
     "auth": {
       "mode": "token",
-      "token": "openclaw-sandbox-token"
+      "token": "REPLACE_WITH_YOUR_SECURE_TOKEN"
     },
     "bind": "lan"
   }

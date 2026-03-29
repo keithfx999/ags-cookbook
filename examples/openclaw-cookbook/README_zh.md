@@ -133,21 +133,24 @@ cos://your-bucket/openclaw-user1/.openclaw/openclaw.json
     },
     "auth": {
       "mode": "token",
-      "token": "openclaw-sandbox-token"
+      "token": "REPLACE_WITH_YOUR_SECURE_TOKEN"
     },
     "bind": "lan"
   }
 }
 ```
 
+> ⚠️ **安全警告**：部署前**必须**将 `REPLACE_WITH_YOUR_SECURE_TOKEN` 替换为一个强且唯一的 Token。`dangerously*` 选项关闭了安全检查以适配 AGS 代理访问——**不要**在没有 AGS 鉴权网关保护的公网实例上使用这些配置。
+
 ### 关键配置项
 
 | 配置路径 | 值 | 说明 |
 |----------|-----|------|
 | `gateway.bind` | `"lan"` | **必须**。让 OpenClaw 监听 `0.0.0.0` 而非 loopback，容器外部才能访问 |
-| `gateway.auth.token` | `"openclaw-sandbox-token"` | OpenClaw 自身的 Bearer Token |
-| `gateway.controlUi.dangerouslyDisableDeviceAuth` | `true` | **必须**。禁用设备配对检查 |
-| `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback` | `true` | **必须**。适配 AGS 域名访问方式 |
+| `gateway.auth.token` | `"REPLACE_WITH_YOUR_SECURE_TOKEN"` | **必须替换**。OpenClaw 自身的 Bearer Token，请使用强且唯一的值 |
+| `gateway.controlUi.dangerouslyDisableDeviceAuth` | `true` | **AGS 环境必须**。禁用设备配对检查（AGS 代理无法完成设备配对） |
+| `gateway.controlUi.dangerouslyAllowHostHeaderOriginFallback` | `true` | **AGS 环境必须**。适配 AGS 域名访问方式（Host 头与 Origin 不一致） |
+| `gateway.controlUi.allowedOrigins` | `["*"]` | 允许任意来源跨域访问——在 AGS 鉴权网关后可接受 |
 
 ---
 
@@ -266,7 +269,7 @@ make run     # 启动 localproxy 管理服务
 3. 等待状态流转：`Idle → Starting → Connecting → Running`
 4. Running 后，点击 **Open Dashboard** 访问 OpenClaw Dashboard（地址为 `http://localhost:3001/sandbox/__openclaw__`）
 
-> ⚠️ 首次访问 Dashboard 需要填写 OpenClaw Token，默认为 `openclaw-sandbox-token`（即 `openclaw.json` 中配置的值）。
+> ⚠️ 首次访问 Dashboard 需要填写 OpenClaw Token，请使用你在 `openclaw.json` 中为 `gateway.auth.token` 设置的值。
 
 ---
 

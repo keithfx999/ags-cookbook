@@ -13,6 +13,8 @@ setup:
 	cd localproxy && pnpm install
 
 build:
+	@echo "$(DOCKER_REGISTRY)" | grep -q "YOUR_NAMESPACE" && \
+		{ echo "❌ Error: Please set DOCKER_REGISTRY to your own registry namespace in Makefile or via command line"; exit 1; } || true
 	$(CONTAINER_ENGINE) build --platform linux/amd64 -t $(IMAGE_LATEST) .
 
 push: build
@@ -29,6 +31,9 @@ push: build
 run:
 	cd localproxy && pnpm start
 
+# NOTE: run-local does NOT include the auto-restart loop used in AGS production.
+# If OpenClaw crashes, the container exits. This is intentional for local debugging
+# so crashes are immediately visible. See README for the AGS startup parameters.
 run-local:
 	$(CONTAINER_ENGINE) run --rm -it --platform linux/amd64 -p 8080:8080 -p 49983:49983 \
 		-v $(PWD)/openclaw.json:/home/node/.openclaw/openclaw.json \
