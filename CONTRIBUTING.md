@@ -69,6 +69,8 @@ Each example should aim to provide:
 
 ### README expectations
 
+`README.md` **must be written in English**. A Chinese translation may be provided as `README_zh.md` (or other language variants such as `README_ja.md`), but the primary `README.md` is always English.
+
 Each example README should include:
 
 1. What the example demonstrates
@@ -99,6 +101,8 @@ Each example README should include:
 - Provide `.env.example` with placeholder values only — never commit real secrets
 
 ## Commit messages
+
+Commit messages **must be written in English**.
 
 Use semantic prefixes such as:
 
