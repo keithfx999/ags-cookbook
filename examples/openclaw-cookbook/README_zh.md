@@ -213,7 +213,10 @@ make push
 | 镜像地址 | `ccr.ccs.tencentyun.com/your-namespace/sandbox-openclaw:<hash>` |
 | 镜像仓库类型 | 个人版 |
 | 启动命令 | `/bin/bash` |
-| 启动参数 | `-l` `-c` `/usr/bin/envd > /tmp/envd.log 2>&1 & while true; do su -s /bin/bash node -c 'OPENCLAW_HOME=/openclaw node /app/openclaw.mjs gateway --port 8080 --bind lan --allow-unconfigured'; echo '[restart] openclaw exited ($?), restarting in 1s...'; sleep 1; done` |
+| 启动参数 | 共 3 项，每项填写在**单独的输入框**中（点击「新增」添加更多输入框）：|
+| | 第 1 项：`-l` |
+| | 第 2 项：`-c` |
+| | 第 3 项：`/usr/bin/envd > /tmp/envd.log 2>&1 & while true; do su -s /bin/bash node -c 'OPENCLAW_HOME=/openclaw node /app/openclaw.mjs gateway --port 8080 --bind lan --allow-unconfigured'; echo '[restart] openclaw exited ($?), restarting in 1s...'; sleep 1; done` |
 | CPU | 4 核 |
 | 内存 | 8 GiB |
 | 探针路径 | `/health` |

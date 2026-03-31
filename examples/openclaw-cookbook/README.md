@@ -213,7 +213,10 @@ When creating a sandbox tool in the [AGS Console](https://console.cloud.tencent.
 | Image Address | `ccr.ccs.tencentyun.com/your-namespace/sandbox-openclaw:<hash>` |
 | Image Registry Type | Personal |
 | Startup Command | `/bin/bash` |
-| Startup Parameters | `-l` `-c` `/usr/bin/envd > /tmp/envd.log 2>&1 & while true; do su -s /bin/bash node -c 'OPENCLAW_HOME=/openclaw node /app/openclaw.mjs gateway --port 8080 --bind lan --allow-unconfigured'; echo '[restart] openclaw exited ($?), restarting in 1s...'; sleep 1; done` |
+| Startup Parameters | 3 items total, each in its own **separate input box** (click "Add" to create more input boxes): |
+| | Item 1: `-l` |
+| | Item 2: `-c` |
+| | Item 3: `/usr/bin/envd > /tmp/envd.log 2>&1 & while true; do su -s /bin/bash node -c 'OPENCLAW_HOME=/openclaw node /app/openclaw.mjs gateway --port 8080 --bind lan --allow-unconfigured'; echo '[restart] openclaw exited ($?), restarting in 1s...'; sleep 1; done` |
 | CPU | 4 cores |
 | Memory | 8 GiB |
 | Probe Path | `/health` |
