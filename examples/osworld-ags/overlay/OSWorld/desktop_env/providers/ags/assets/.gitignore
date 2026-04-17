@@ -1,0 +1,6 @@
+# Track only the Go source and the pre-compiled Linux/amd64 binary.
+# Ignore any other build artifacts (e.g. binaries for other targets).
+*
+!.gitignore
+!*.go
+!cdp_proxy

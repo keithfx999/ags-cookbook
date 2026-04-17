@@ -200,7 +200,8 @@ class LocalProxyServer:
     async def _start_server(self):
         """Start the aiohttp web server with retry on port conflict."""
         import random
-        app = web.Application()
+        # client_max_size=0 disables aiohttp's default 1 MB request body limit
+        app = web.Application(client_max_size=0)
 
         # Route all requests through our handler
         app.router.add_route('*', '/{path:.*}', self._handle_request)
@@ -457,7 +458,8 @@ class CDPProxyServer:
     async def _start_server(self):
         """Start the aiohttp web server with retry on port conflict."""
         import random
-        app = web.Application()
+        # client_max_size=0 disables aiohttp's default 1 MB request body limit
+        app = web.Application(client_max_size=0)
 
         # Route all requests through our handler
         app.router.add_route('*', '/{path:.*}', self._handle_request)
@@ -767,21 +769,33 @@ class AGSProvider(Provider):
         (e.g., "launch google-chrome --remote-debugging-port=1337").
 
         This method:
-        1. Installs aiohttp dependency
-        2. Deploys /tmp/cdp_proxy.py script (rewrites Host header for Chrome CDP)
-        3. Uses sudo to replace /usr/bin/socat with a wrapper that intercepts
+        1. Uploads the pre-compiled Go binary (assets/cdp_proxy) to /tmp/cdp_proxy
+           in the sandbox.  The binary is a zero-dependency static executable that
+           proxies Chrome CDP traffic on :9222 → 127.0.0.1:1337, rewrites
+           WebSocket URLs in /json* responses, and tunnels WebSocket connections
+           at the TCP level (faster than the previous aiohttp-based cdp_proxy.py).
+        2. Uses sudo to replace /usr/bin/socat with a bash wrapper that intercepts
            "socat tcp-listen:9222,fork tcp:localhost:1337" calls from task setup,
-           starts cdp_proxy.py instead, and passes other socat calls through.
+           starts the Go binary instead, and passes other socat calls through.
+
+        The Go binary (assets/cdp_proxy.go) is built once with:
+            CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \\
+              go build -ldflags="-s -w" -o assets/cdp_proxy assets/cdp_proxy.go
+        Optionally compressed with: upx --best assets/cdp_proxy
         """
+        import os as _os
         import json as json_module
-        exec_url = f"http://localhost:{self.local_server_port}/setup/execute"
-        headers = {"Content-Type": "application/json"}
+        from requests_toolbelt.multipart.encoder import MultipartEncoder
+
+        exec_url   = f"http://localhost:{self.local_server_port}/setup/execute"
+        upload_url = f"http://localhost:{self.local_server_port}/setup/upload"
+        headers_json = {"Content-Type": "application/json"}
 
         def exec_shell(cmd: str) -> dict:
             """Execute a shell command in the sandbox."""
             try:
                 payload = json_module.dumps({"command": cmd, "shell": True})
-                resp = requests.post(exec_url, headers=headers, data=payload, timeout=120)
+                resp = requests.post(exec_url, headers=headers_json, data=payload, timeout=120)
                 if resp.status_code == 200:
                     result = resp.json()
                     logger.debug("exec '%s': %s", cmd[:50], result.get("output", "")[:200])
@@ -793,94 +807,55 @@ class AGSProvider(Provider):
                 logger.warning("exec '%s' error: %s", cmd[:50], e)
                 return {"status": "error", "output": str(e)}
 
-        # Ensure aiohttp is installed
-        exec_shell("python3 -c 'import aiohttp' 2>/dev/null || pip3 install --quiet aiohttp")
+        def upload_file(local_path: str, remote_path: str) -> None:
+            """Upload a local file to the sandbox via /setup/upload."""
+            with open(local_path, "rb") as f:
+                form = MultipartEncoder({
+                    "file_path": remote_path,
+                    "file_data": (_os.path.basename(local_path), f),
+                })
+                resp = requests.post(
+                    upload_url,
+                    headers={"Content-Type": form.content_type},
+                    data=form,
+                    timeout=(10, 120),
+                )
+            if resp.status_code != 200:
+                raise RuntimeError(
+                    f"upload {local_path!r} → {remote_path!r} failed "
+                    f"(HTTP {resp.status_code}): {resp.text[:200]}"
+                )
+            logger.debug("uploaded %s → %s", local_path, remote_path)
 
-        # Create CDP proxy script that rewrites Host header
-        proxy_script = r'''
-import asyncio
-import aiohttp
-from aiohttp import web
-import re
+        assets_dir = _os.path.join(_os.path.dirname(__file__), "assets")
+        binary_path = _os.path.join(assets_dir, "cdp_proxy")
 
-CHROME_HOST = "127.0.0.1"
-CHROME_PORT = 1337
+        # ── 1. Upload Go binary (skip if already present and executable) ────────
+        check = exec_shell("test -x /tmp/cdp_proxy && echo EXISTS || echo MISSING")
+        if "MISSING" in check.get("output", "MISSING"):
+            if not _os.path.exists(binary_path):
+                raise FileNotFoundError(
+                    f"Pre-compiled cdp_proxy binary not found at {binary_path!r}. "
+                    "Build it with:\n"
+                    "  CGO_ENABLED=0 GOOS=linux GOARCH=amd64 "
+                    "go build -ldflags='-s -w' -o assets/cdp_proxy assets/cdp_proxy.go"
+                )
+            upload_file(binary_path, "/tmp/cdp_proxy")
+            exec_shell("chmod +x /tmp/cdp_proxy")
+            logger.info("cdp_proxy binary uploaded to sandbox")
+        else:
+            logger.debug("cdp_proxy binary already present in sandbox, skipping upload")
 
-async def handle_http(request):
-    path = request.path
-    if request.query_string:
-        path += "?" + request.query_string
-    url = f"http://{CHROME_HOST}:{CHROME_PORT}{path}"
-    headers = {"Host": f"localhost:{CHROME_PORT}"}
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, headers=headers) as resp:
-                content = await resp.read()
-                if path.startswith("/json"):
-                    content_str = content.decode("utf-8")
-                    content_str = re.sub(r"ws://[^/\s\"]+:1337", "ws://localhost:9222", content_str)
-                    content_str = content_str.replace(f"localhost:{CHROME_PORT}", "localhost:9222")
-                    content = content_str.encode("utf-8")
-                return web.Response(body=content, status=resp.status, content_type=resp.content_type)
-    except Exception as e:
-        return web.Response(text=str(e), status=502)
-
-async def handle_websocket(request):
-    ws_client = web.WebSocketResponse()
-    await ws_client.prepare(request)
-    path = request.path
-    url = f"ws://{CHROME_HOST}:{CHROME_PORT}{path}"
-    headers = {"Host": f"localhost:{CHROME_PORT}"}
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.ws_connect(url, headers=headers) as ws_remote:
-                async def forward_to_remote():
-                    async for msg in ws_client:
-                        if msg.type == aiohttp.WSMsgType.TEXT:
-                            await ws_remote.send_str(msg.data)
-                        elif msg.type == aiohttp.WSMsgType.BINARY:
-                            await ws_remote.send_bytes(msg.data)
-                        elif msg.type == aiohttp.WSMsgType.CLOSE:
-                            break
-                async def forward_to_client():
-                    async for msg in ws_remote:
-                        if msg.type == aiohttp.WSMsgType.TEXT:
-                            await ws_client.send_str(msg.data)
-                        elif msg.type == aiohttp.WSMsgType.BINARY:
-                            await ws_client.send_bytes(msg.data)
-                        elif msg.type == aiohttp.WSMsgType.CLOSE:
-                            break
-                await asyncio.gather(forward_to_remote(), forward_to_client(), return_exceptions=True)
-    except Exception as e:
-        print(f"WebSocket error: {e}")
-    return ws_client
-
-async def handle_request(request):
-    if request.headers.get("Upgrade", "").lower() == "websocket":
-        return await handle_websocket(request)
-    return await handle_http(request)
-
-app = web.Application()
-app.router.add_route("*", "/{path:.*}", handle_request)
-if __name__ == "__main__":
-    web.run_app(app, host="0.0.0.0", port=9222, print=None)
-'''
-        # Write proxy script
-        write_cmd = f"cat > /tmp/cdp_proxy.py << 'CDPPROXYSCRIPT'\n{proxy_script}\nCDPPROXYSCRIPT"
-        exec_shell(write_cmd)
-
-        # Install socat wrapper using sudo (password: password).
-        # 1. Backup real socat binary
-        # 2. Replace /usr/bin/socat with a bash wrapper that:
-        #    - Intercepts "socat tcp-listen:9222,..." and starts cdp_proxy.py instead
-        #    - Passes all other socat calls through to the real binary
+        # ── 2. Install socat wrapper + sudo-copy (merged into 2 exec_shell calls)
+        # The wrapper intercepts "socat tcp-listen:9222,..." and starts the Go
+        # binary instead; all other socat calls are passed to the real binary.
         socat_wrapper = (
             '#!/bin/bash\n'
             'REAL=/usr/bin/socat.real\n'
             'for arg in "$@"; do\n'
             '  case "$arg" in\n'
             '    tcp-listen:9222*)\n'
-            '      nohup python3 /tmp/cdp_proxy.py >/tmp/cdp_proxy.log 2>&1 &\n'
+            '      nohup /tmp/cdp_proxy >/tmp/cdp_proxy.log 2>&1 &\n'
             '      for i in $(seq 1 50); do\n'
             '        ss -tlnp 2>/dev/null | grep -q ":9222 " && exit 0\n'
             '        sleep 0.2\n'
@@ -891,14 +866,23 @@ if __name__ == "__main__":
             'done\n'
             'exec "$REAL" "$@"\n'
         )
-        # Write wrapper to /tmp first, then use sudo to install
-        exec_shell(f"cat > /tmp/socat_wrapper << 'SOCATWRAPPER'\n{socat_wrapper}SOCATWRAPPER")
-        exec_shell("chmod +x /tmp/socat_wrapper")
-        exec_shell("echo password | sudo -S cp /usr/bin/socat /usr/bin/socat.real")
-        exec_shell("echo password | sudo -S cp /tmp/socat_wrapper /usr/bin/socat")
-        exec_shell("echo password | sudo -S chmod +x /usr/bin/socat")
 
-        # Verify wrapper is installed
+        import base64 as _base64
+        socat_b64 = _base64.b64encode(socat_wrapper.encode()).decode()
+
+        # Write wrapper script
+        exec_shell(
+            f"echo '{socat_b64}' | base64 -d > /tmp/socat_wrapper && "
+            "chmod +x /tmp/socat_wrapper"
+        )
+        # Install wrapper with sudo (merged to reduce round-trips)
+        exec_shell(
+            "echo password | sudo -S cp /usr/bin/socat /usr/bin/socat.real && "
+            "echo password | sudo -S cp /tmp/socat_wrapper /usr/bin/socat && "
+            "echo password | sudo -S chmod +x /usr/bin/socat"
+        )
+
+        # Verify
         result = exec_shell("file /usr/bin/socat && file /usr/bin/socat.real")
         logger.info("socat wrapper installed: %s", result.get("output", "").strip())
 
